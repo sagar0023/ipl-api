@@ -28,18 +28,5 @@ def team_record():
     response = jugaad.teamAPI(team_name)
     return response
 
-@app.route('/api/batting-record')
-def batting_record():
-    batsman_name = request.args.get('batsman')
-    response = jugaad.batsmanAPI(batsman_name)
-    return response
-
-@app.route('/api/bowling-record')
-def bowling_record():
-    bowler_name = request.args.get('bowler')
-    response = jugaad.bowlerAPI(bowler_name)
-    return response
-
-
 if __name__ == '__main__':
     app.run(debug=True)
