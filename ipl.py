@@ -7,12 +7,24 @@ matches = pd.read_csv(ipl_matches)
 
 
 def teamsAPI():
-    teams = list(set(list(matches['Team1']) + list(matches['Team2'])))
-    team_dict = {
-        'teams':teams
-    }
+    teams = list(matches['Team1'].unique())
+    team_id = ["v172483766/rr_czknnb.png","v172483769/rcb_jz39ny.png",'v172483766/srh_k353jp.jpg',
+          'v172483767/dc_bpj6t5.webp','v172483765/csk_zo7eq8.jpg','v172483766/gt_oj20zu.webp','v1724837267/lcg_aoxac6.jpg','v172483767/kkr_imyk7p.webp','v172483768/pk_hdzfml.webp','v172483767/mi_th59xu.jpg',
+          'v172483768/kxip_zyxvor.png','v1724840479/dd_riqoio.jpg','v1724837266/rps_yh8yoo.jpg','v1724840667/gl_miygl7.png','v1724837266/rps_yh8yoo.jpg',
+          'v1724837267/pwi_rgfb0d.png','v1724837265/deccan_jcwwaj.jpg','v1724837266/ktk_ib6du5.png']
+    
+    # Create a dictionary with a tree-like structure
+    team_tree = {"teams": []}
 
-    return team_dict
+    # Populate the tree with team data
+    for team, id in zip(teams, team_id):
+        team_tree["teams"].append({
+            "name": team,
+            "team_id": id
+        })
+
+    # Convert the dictionary to a JSON object
+    return json.dumps(team_tree)
 
 def teamVteamAPI(team1,team2):
 
