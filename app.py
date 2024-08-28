@@ -10,8 +10,8 @@ def home():
 
 @app.route('/api/teams')
 def teams():
-    teams = ipl.teamsAPI()
-    return jsonify(teams)
+    response = ipl.teamsAPI()
+    return response
 
 @app.route('/api/teamvteam')
 def teamvteam():
