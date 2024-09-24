@@ -37,6 +37,6 @@ def point_table(season):
 
     table_df.reset_index(inplace=True)
 
-    return table_df.to_json(orient='columns')
+    return table_df.to_json(orient='records')
 
 
