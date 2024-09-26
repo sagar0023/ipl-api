@@ -1,42 +1,63 @@
 import numpy as np
 import pandas as pd
+
+# Load the IPL dataset
 ipl = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRy2DUdUbaKx_Co9F0FSnIlyS-8kp4aKv_I0-qzNeghiZHAI_hw94gKG22XTxNJHMFnFVKsO4xWOdIs/pub?gid=1655759976&single=true&output=csv")
 
-def matches_played(csdf,team):
-    return ((csdf.Team1 == team) | (csdf.Team2 == team)).sum()
+# Optimized matches_played function with vectorization
+def matches_played(csdf, team):
+    return (csdf['Team1'].eq(team) | csdf['Team2'].eq(team)).sum()
 
-def matches_won(csdf,team):
-    return (csdf.WinningTeam == team).sum()
+# Optimized matches_won function with vectorization
+def matches_won(csdf, team):
+    return csdf['WinningTeam'].eq(team).sum()
 
-def match_no_result(csdf,team):
-    return (((csdf.Team1 == team) | (csdf.Team2 == team)) & csdf.WinningTeam.isna()).sum()
+# Optimized match_no_result function with vectorization
+def match_no_result(csdf, team):
+    return ((csdf['Team1'].eq(team) | csdf['Team2'].eq(team)) & csdf['WinningTeam'].isna()).sum()
 
+# Optimized point_table function
 def point_table(season):
-    csdf = ipl[ipl.Season == season].copy()
-    csdf['LoosingTeam'] = csdf[csdf.WinningTeam == csdf.Team1]['Team2'].combine_first(csdf[csdf.WinningTeam == csdf.Team2]['Team1'])
+    # Filter for the current season
+    csdf = ipl[ipl['Season'] == season]
 
-    fmdf = csdf[csdf['MatchNumber'] == 'Final']
-    winning_team_str = fmdf.WinningTeam.values[0]
-    runner_str = fmdf.LoosingTeam.values[0]
+    # Vectorized calculation of the LoosingTeam column using np.where
+    csdf['LoosingTeam'] = np.where(csdf['WinningTeam'] == csdf['Team1'], csdf['Team2'], csdf['Team1'])
     
+    # Get the final match data
+    final_match = csdf.loc[csdf['MatchNumber'] == 'Final'].iloc[0]
+    winning_team_str = final_match['WinningTeam']
+    runner_str = final_match['LoosingTeam']
     
-    
+    # Get unique teams for the current season
+    teams = csdf['Team1'].unique()
 
-    table_df = pd.DataFrame()
-    table_df['TeamName'] = csdf.Team1.unique()
-    table_df['MatchesPlayed'] = table_df['TeamName'].apply(lambda x : matches_played(csdf,x))
-    table_df['MatchesWon'] = table_df['TeamName'].apply(lambda x : matches_won(csdf,x))
-    table_df['NoResult'] = table_df['TeamName'].apply(lambda x : match_no_result(csdf,x))
-    table_df['Points'] = table_df['MatchesWon']*2+table_df['NoResult']
+    # Calculate the number of matches played, won, and no results for each team in vectorized form
+    matches_played_count = {team: matches_played(csdf, team) for team in teams}
+    matches_won_count = {team: matches_won(csdf, team) for team in teams}
+    no_result_count = {team: match_no_result(csdf, team) for team in teams}
 
-    table_df['SeasonPosition'] = table_df.Points.rank(ascending = False,method='first').astype('object')
-    table_df.set_index('TeamName',inplace=True)
-    table_df.sort_values('Points',ascending=False,inplace=True)
-    table_df.loc[winning_team_str,'SeasonPosition'] = 'Winner'
-    table_df.at[runner_str,'SeasonPosition'] = 'Runner'
+    # Create a DataFrame for the points table
+    table_df = pd.DataFrame({
+        'TeamName': teams,
+        'MatchesPlayed': [matches_played_count[team] for team in teams],
+        'MatchesWon': [matches_won_count[team] for team in teams],
+        'NoResult': [no_result_count[team] for team in teams]
+    })
 
-    table_df.reset_index(inplace=True)
+    # Calculate points: 2 points for each win, 1 point for each no result
+    table_df['Points'] = table_df['MatchesWon'] * 2 + table_df['NoResult']
 
-    return table_df.to_json(orient='records')
+    # Rank teams based on points
+    table_df['SeasonPosition'] = table_df['Points'].rank(ascending=False, method='first').astype('object')
 
+    # Set 'Winner' and 'Runner' labels for the final match
+    table_df.loc[table_df['TeamName'] == winning_team_str, 'SeasonPosition'] = 'Winner'
+    table_df.loc[table_df['TeamName'] == runner_str, 'SeasonPosition'] = 'Runner'
 
+    # Sort the table by points and reset the index
+    table_df.sort_values('Points', ascending=False, inplace=True)
+    table_df.reset_index(drop=True, inplace=True)
+
+    # Return the points table as JSON
+    return table_df.to_json(orient='columns')
