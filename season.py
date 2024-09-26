@@ -6,15 +6,15 @@ ipl = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRy2DUdUbaKx_
 
 # Optimized matches_played function with vectorization
 def matches_played(csdf, team):
-    return (csdf['Team1'].eq(team) | csdf['Team2'].eq(team)).sum()
+    return (csdf['Team1'] == team).sum() + (csdf['Team2'] == team).sum()
 
 # Optimized matches_won function with vectorization
 def matches_won(csdf, team):
-    return csdf['WinningTeam'].eq(team).sum()
+    return (csdf['WinningTeam'] == team).sum()
 
 # Optimized match_no_result function with vectorization
 def match_no_result(csdf, team):
-    return ((csdf['Team1'].eq(team) | csdf['Team2'].eq(team)) & csdf['WinningTeam'].isna()).sum()
+    return (((csdf['Team1'] == team) | (csdf['Team2'] == team)) & csdf['WinningTeam'].isna()).sum()
 
 # Optimized point_table function
 def point_table(season):
@@ -22,6 +22,7 @@ def point_table(season):
     csdf = ipl[ipl['Season'] == season]
 
     # Vectorized calculation of the LoosingTeam column using np.where
+    # Use np.where to handle element-wise conditional selection
     csdf['LoosingTeam'] = np.where(csdf['WinningTeam'] == csdf['Team1'], csdf['Team2'], csdf['Team1'])
     
     # Get the final match data
